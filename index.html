@@ -330,27 +330,6 @@ img{max-width:100%;}
   display:flex;align-items:center;gap:8px;
   margin-right:auto;
 }
-/* ── Topbar nav arrows ── */
-.topbar-nav-arrows {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-.nav-arrow {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  width: 30px; height: 30px;
-  border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .8rem;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-.nav-arrow:not(:disabled):hover { border-color: var(--accent); color: var(--accent); }
-.nav-arrow:disabled { opacity: .3; cursor: not-allowed; }
-
 /* ── Topbar fullscreen button ── */
 .topbar-fs-btn{
   background:none;border:1px solid var(--border);
@@ -956,110 +935,8 @@ body.fake-fullscreen-lock{ overflow:hidden; }
 }
 
 /* ══════════════════════════════════════════════
-   CATEGORY DROPDOWN (quick-peek of sub-cats + links)
+   CLOUD FILES / PROGRAMS VIEW
 ══════════════════════════════════════════════ */
-.cat-card {
-  position: relative; /* anchor for dropdown */
-}
-.cat-card-dd-btn {
-  position: absolute;
-  bottom: 8px; left: 8px;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: #fff;
-  border-radius: 6px;
-  padding: 2px 7px;
-  font-size: .68rem;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 4px;
-  transition: background .15s;
-  z-index: 2;
-}
-.cat-card-dd-btn:hover { background: rgba(0,0,0,0.6); }
-
-.cat-dropdown {
-  display: none;
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 230px;
-  max-width: 280px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  z-index: 200;
-  overflow: hidden;
-  animation: ddFadeIn .15s ease;
-}
-.cat-dropdown.open { display: block; }
-@keyframes ddFadeIn {
-  from { opacity:0; transform: translateY(-6px); }
-  to   { opacity:1; transform: translateY(0); }
-}
-.cat-dd-head {
-  padding: 10px 14px 8px;
-  font-size: .8rem;
-  font-weight: 700;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 6px;
-}
-.cat-dd-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 14px;
-  font-size: .85rem;
-  cursor: pointer;
-  transition: background .12s;
-  border-bottom: 1px solid var(--border);
-  overflow: hidden;
-}
-.cat-dd-item:last-child { border-bottom: none; }
-.cat-dd-item:hover { background: var(--surface2); color: var(--accent); }
-.cat-dd-item i { width: 16px; text-align: center; flex-shrink: 0; color: var(--muted); }
-.cat-dd-item:hover i { color: var(--accent); }
-.cat-dd-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cat-dd-more {
-  padding: 7px 14px;
-  font-size: .78rem;
-  color: var(--accent);
-  text-align: center;
-  cursor: pointer;
-  background: var(--surface2);
-}
-.cat-dd-more:hover { filter: brightness(1.2); }
-
-/* Settings tabs */
-.sett-tabs {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 6px;
-}
-.sett-tab {
-  flex: 1;
-  min-width: 80px;
-  padding: 8px 12px;
-  border-radius: calc(var(--radius) - 4px);
-  border: none;
-  background: none;
-  color: var(--muted);
-  font-size: .82rem;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: var(--font);
-  transition: background .15s, color .15s;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  white-space: nowrap;
-}
-.sett-tab:hover { color: var(--accent); }
-.sett-tab.active { background: var(--accent); color: #fff; }
-.sett-panel { display: none; }
-.sett-panel.active { display: block; }
 .cloud-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
@@ -1681,7 +1558,6 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
   display: flex;
   justify-content: center;
   transition: width .3s ease;
-  position: relative;
 }
 .program-iframe-outer iframe {
   width: 100%;
@@ -1691,36 +1567,6 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
   border-radius: var(--radius);
   background: #fff;
   transition: width .3s ease, height .3s ease;
-}
-
-/* Fullscreen: outer fills screen, iframe fills outer */
-#programIframeOuter.fake-fullscreen,
-#programIframeOuter:fullscreen,
-#programIframeOuter:-webkit-full-screen {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  max-width: 100vw !important;
-  max-height: 100vh !important;
-  z-index: 9999 !important;
-  border-radius: 0 !important;
-  border: none !important;
-  background: #000 !important;
-  display: flex !important;
-  align-items: stretch !important;
-  justify-content: stretch !important;
-  margin: 0 !important;
-}
-#programIframeOuter.fake-fullscreen iframe,
-#programIframeOuter:fullscreen iframe,
-#programIframeOuter:-webkit-full-screen iframe {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: unset !important;
-  border-radius: 0 !important;
-  border: none !important;
 }
 
 /* iframe size controls */
@@ -2426,12 +2272,6 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
     <span><span class="logo-outer">Outer</span><span class="logo-school">School</span></span>
   </div>
 
-  <!-- Back / Forward nav arrows -->
-  <div class="topbar-nav-arrows">
-    <button id="btnNavBack"  class="nav-arrow" onclick="historyBack()"    title="رجوع"    disabled><i class="fas fa-chevron-right"></i></button>
-    <button id="btnNavFwd"   class="nav-arrow" onclick="historyForward()" title="للأمام"  disabled><i class="fas fa-chevron-left"></i></button>
-  </div>
-
   <!-- Search (center) -->
   <div class="topbar-search">
     <input type="search" id="globalSearch" placeholder="ابحث في المكتبة..." autocomplete="off" oninput="handleSearch(this.value)">
@@ -2696,9 +2536,8 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
     <div class="program-iframe-outer" id="programIframeOuter">
       <iframe
         id="programFrame"
-        sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-pointer-lock allow-downloads"
+        sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-pointer-lock"
         allowfullscreen
-        allow="autoplay; fullscreen; clipboard-write; encrypted-media; picture-in-picture"
       ></iframe>
     </div>
   </div>
@@ -2759,16 +2598,8 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
     </div>
 
     <div class="settings-grid">
-      <!-- Settings Tabs -->
-      <div class="sett-tabs" style="grid-column:1/-1;">
-        <button class="sett-tab active" onclick="switchSettTab('profile',this)"><i class="fas fa-user"></i> الحساب</button>
-        <button class="sett-tab" onclick="switchSettTab('appearance',this)"><i class="fas fa-palette"></i> المظهر</button>
-        <button class="sett-tab" onclick="switchSettTab('background',this)"><i class="fas fa-image"></i> الخلفية</button>
-        <button class="sett-tab" onclick="switchSettTab('download',this)"><i class="fas fa-download"></i> التحميل</button>
-        <button class="sett-tab" onclick="switchSettTab('data',this)"><i class="fas fa-database"></i> البيانات</button>
-      </div>
-      <!-- ═ PANEL: profile ═ -->
-      <div class="sett-panel active" data-sett="profile" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+
+      <!-- Profile -->
       <div class="settings-card">
         <h3><i class="fas fa-user-circle"></i> الملف الشخصي</h3>
         <div class="profile-avatar-wrap">
@@ -2795,25 +2626,7 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
           <i class="fas fa-save"></i> حفظ الملف الشخصي
         </button>
       </div>
-      <!-- About -->
-      <div class="settings-card">
-        <h3><i class="fas fa-info-circle"></i> حول التطبيق</h3>
-        <div style="text-align:center;padding:10px 0;">
-          <div style="font-size:2.5rem;margin-bottom:10px;">🎓</div>
-          <div style="font-size:1.3rem;font-weight:900;color:var(--accent);">OuterSchool</div>
-          <div style="font-size:.85rem;color:var(--muted);margin-top:4px;">نظام إدارة محتوى تعليمي</div>
-          <div style="font-size:.78rem;color:var(--muted);margin-top:14px;line-height:1.8;">الإصدار 5.0 · يعمل بدون إنترنت · البيانات محفوظة في متصفحك</div>
-        </div>
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-          <button class="btn btn-danger btn-sm" style="width:100%;" onclick="clearAllData()">
-            <i class="fas fa-trash-alt"></i> مسح كل البيانات
-          </button>
-        </div>
-      </div>
-      </div>
 
-      <!-- ═ PANEL: appearance ═ -->
-      <div class="sett-panel" data-sett="appearance" style="grid-column:1/-1;display:none;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
       <!-- Themes -->
       <div class="settings-card">
         <h3><i class="fas fa-palette"></i> المظهر والثيم</h3>
@@ -2832,6 +2645,7 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
           </select>
         </div>
       </div>
+
       <!-- Custom Theme Creator -->
       <div class="settings-card">
         <h3><i class="fas fa-swatchbook"></i> إنشاء ثيم مخصص</h3>
@@ -2839,6 +2653,7 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
           <label>اسم الثيم *</label>
           <input type="text" id="ctName" placeholder="مثال: ثيمي الخاص">
         </div>
+        <!-- Theme color pickers: tab-based to keep card compact -->
         <div class="ct-color-tabs">
           <button class="ct-ctab active" onclick="switchCtColor('ctBg',this)">خلفية</button>
           <button class="ct-ctab" onclick="switchCtColor('ctSurface',this)">سطح</button>
@@ -2846,11 +2661,13 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
           <button class="ct-ctab" onclick="switchCtColor('ctGold',this)">ثانوي</button>
           <button class="ct-ctab" onclick="switchCtColor('ctText',this)">نص</button>
         </div>
+        <!-- Hidden hex stores for each field — read by saveCustomTheme() -->
         <input type="hidden" id="ctBg" value="#0d1117">
         <input type="hidden" id="ctSurface" value="#161b22">
         <input type="hidden" id="ctAccent" value="#3b82f6">
         <input type="hidden" id="ctGold" value="#f59e0b">
         <input type="hidden" id="ctText" value="#e6edf3">
+        <!-- Shared HSL picker (swaps target field) -->
         <div class="hsl-picker" id="ctHslPicker">
           <div class="hsl-preview-row">
             <div class="hsl-preview-swatch" id="ctHslSwatch"></div>
@@ -2860,10 +2677,22 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
             </div>
           </div>
           <div class="hsl-sliders">
-            <div class="hsl-row"><label class="hsl-lbl">R <span id="ctHLabel">13</span></label><input type="range" class="hsl-range r-range" id="ctH" min="0" max="255" value="13" oninput="hslChanged('ct')"></div>
-            <div class="hsl-row"><label class="hsl-lbl">G <span id="ctSLabel">17</span></label><input type="range" class="hsl-range g-range" id="ctS" min="0" max="255" value="17" oninput="hslChanged('ct')"></div>
-            <div class="hsl-row"><label class="hsl-lbl">B <span id="ctLLabel">23</span></label><input type="range" class="hsl-range b-range" id="ctL" min="0" max="255" value="23" oninput="hslChanged('ct')"></div>
-            <div class="hsl-row"><label class="hsl-lbl">A <span id="ctALabel">100</span></label><input type="range" class="hsl-range a-range" id="ctA" min="0" max="100" value="100" oninput="hslChanged('ct')"></div>
+            <div class="hsl-row">
+              <label class="hsl-lbl">R <span id="ctHLabel">13</span></label>
+              <input type="range" class="hsl-range r-range" id="ctH" min="0" max="255" value="13" oninput="hslChanged('ct')">
+            </div>
+            <div class="hsl-row">
+              <label class="hsl-lbl">G <span id="ctSLabel">17</span></label>
+              <input type="range" class="hsl-range g-range" id="ctS" min="0" max="255" value="17" oninput="hslChanged('ct')">
+            </div>
+            <div class="hsl-row">
+              <label class="hsl-lbl">B <span id="ctLLabel">23</span></label>
+              <input type="range" class="hsl-range b-range" id="ctL" min="0" max="255" value="23" oninput="hslChanged('ct')">
+            </div>
+            <div class="hsl-row">
+              <label class="hsl-lbl">A <span id="ctALabel">100</span></label>
+              <input type="range" class="hsl-range a-range" id="ctA" min="0" max="100" value="100" oninput="hslChanged('ct')">
+            </div>
           </div>
           <div class="hsl-hex-row">
             <span class="hsl-hash">#</span>
@@ -2873,67 +2702,159 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
           </div>
           <div class="hsl-preset-row" id="ctPresetRow"></div>
         </div>
-        <div class="form-group"><label>شفافية: <span class="range-val" id="ctOpacityVal">100%</span></label><input type="range" id="ctOpacity" min="20" max="100" value="100" oninput="document.getElementById('ctOpacityVal').textContent=this.value+'%'"></div>
-        <div class="form-group"><label>ضبابية: <span class="range-val" id="ctBlurVal">0px</span></label><input type="range" id="ctBlur" min="0" max="20" value="0" oninput="document.getElementById('ctBlurVal').textContent=this.value+'px'"></div>
-        <button class="btn btn-primary" style="width:100%;" onclick="saveCustomTheme()"><i class="fas fa-save"></i> حفظ وتطبيق الثيم</button>
-      </div>
-      <!-- Interface Size -->
-      <div class="settings-card">
-        <h3><i class="fas fa-text-height"></i> حجم الواجهة</h3>
-        <div class="form-group"><label>حجم الخط: <span class="range-val" id="lcFontVal">100%</span></label><div class="lc-inline-row"><button class="lc-btn" onclick="changeFontSize(-1)">A-</button><button class="lc-btn" onclick="changeFontSize(1)">A+</button></div></div>
-        <div class="form-group"><label>عرض المحتوى: <span class="range-val" id="lcLayoutVal">md</span></label><div class="lc-inline-row"><button class="lc-btn" onclick="changeLayoutScale(-1)">−</button><button class="lc-btn" onclick="changeLayoutScale(1)">+</button></div></div>
-      </div>
+        <div class="form-group">
+          <label>شفافية العناصر (Transparency): <span class="range-val" id="ctOpacityVal">100%</span></label>
+          <input type="range" id="ctOpacity" min="20" max="100" value="100" oninput="document.getElementById('ctOpacityVal').textContent=this.value+'%'">
+        </div>
+        <div class="form-group">
+          <label>ضبابية العناصر (Blur): <span class="range-val" id="ctBlurVal">0px</span></label>
+          <input type="range" id="ctBlur" min="0" max="20" value="0" oninput="document.getElementById('ctBlurVal').textContent=this.value+'px'">
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="saveCustomTheme()">
+          <i class="fas fa-save"></i> حفظ وتطبيق الثيم
+        </button>
       </div>
 
-      <!-- ═ PANEL: background ═ -->
-      <div class="sett-panel" data-sett="background" style="grid-column:1/-1;display:none;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+      <!-- App Background Image -->
       <div class="settings-card">
         <h3><i class="fas fa-image"></i> خلفية البرنامج</h3>
-        <div class="bg-preview-wrap" id="bgPreviewWrap"><span>لا توجد خلفية مختارة</span></div>
-        <div class="upload-row" style="margin-bottom:16px;">
-          <label class="upload-btn"><i class="fas fa-upload"></i> اختر صورة<input type="file" id="bgImageInput" accept="image/*" onchange="handleBgImageUpload(this)"></label>
-          <button class="btn btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="removeBgImage()"><i class="fas fa-trash"></i> إزالة</button>
+        <div class="bg-preview-wrap" id="bgPreviewWrap">
+          <span>لا توجد خلفية مختارة</span>
         </div>
-        <div class="form-group"><label>ضبابية: <span class="range-val" id="bgBlurVal">0px</span></label><input type="range" id="bgBlurRange" min="0" max="20" value="0" oninput="updateBgBlur(this.value)"></div>
-        <div class="form-group"><label>شفافية: <span class="range-val" id="bgOpacityVal">50%</span></label><input type="range" id="bgOpacityRange" min="0" max="100" value="50" oninput="updateBgOpacity(this.value)"></div>
+        <div class="upload-row" style="margin-bottom:16px;">
+          <label class="upload-btn">
+            <i class="fas fa-upload"></i> اختر صورة
+            <input type="file" id="bgImageInput" accept="image/*" onchange="handleBgImageUpload(this)">
+          </label>
+          <button class="btn btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="removeBgImage()">
+            <i class="fas fa-trash"></i> إزالة
+          </button>
+        </div>
+        <div class="form-group">
+          <label>ضبابية الخلفية (Blur): <span class="range-val" id="bgBlurVal">0px</span></label>
+          <input type="range" id="bgBlurRange" min="0" max="20" value="0" oninput="updateBgBlur(this.value)">
+        </div>
+        <div class="form-group">
+          <label>شفافية الخلفية (Transparency): <span class="range-val" id="bgOpacityVal">50%</span></label>
+          <input type="range" id="bgOpacityRange" min="0" max="100" value="50" oninput="updateBgOpacity(this.value)">
+        </div>
       </div>
+
+      <!-- Google Fonts -->
       <div class="settings-card">
         <h3><i class="fas fa-font"></i> استيراد خط من Google Fonts</h3>
-        <div class="form-group"><label>اسم الخط (مثال: Amiri، Almarai)</label><div class="gfont-row"><input type="text" id="gfontName" placeholder="اكتب اسم الخط بالإنجليزية..."><button class="btn btn-primary" onclick="importGoogleFont()"><i class="fas fa-download"></i> استيراد</button></div></div>
+        <div class="form-group">
+          <label>اسم الخط (مثال: Amiri، Almarai، Reem Kufi)</label>
+          <div class="gfont-row">
+            <input type="text" id="gfontName" placeholder="اكتب اسم الخط بالإنجليزية...">
+            <button class="btn btn-primary" onclick="importGoogleFont()"><i class="fas fa-download"></i> استيراد</button>
+          </div>
+        </div>
         <div class="custom-fonts-list" id="customFontsList"></div>
       </div>
+
+      <!-- Background Effects -->
       <div class="settings-card">
         <h3><i class="fas fa-magic"></i> تأثيرات الخلفية</h3>
-        <div class="toggle-wrap"><span>تأثير الجسيمات</span><label class="toggle"><input type="checkbox" id="toggleParticles" onchange="toggleParticlesEffect(this.checked)"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-wrap"><span>مطر الماتريكس</span><label class="toggle"><input type="checkbox" id="toggleMatrix" onchange="toggleMatrixEffect(this.checked)"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-wrap"><span>الكرات المتحركة</span><label class="toggle"><input type="checkbox" id="toggleBubbles" onchange="toggleBubblesEffect(this.checked)"><span class="toggle-slider"></span></label></div>
-      </div>
+        <div class="toggle-wrap">
+          <span>تأثير الجسيمات</span>
+          <label class="toggle">
+            <input type="checkbox" id="toggleParticles" onchange="toggleParticlesEffect(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-wrap">
+          <span>مطر الماتريكس</span>
+          <label class="toggle">
+            <input type="checkbox" id="toggleMatrix" onchange="toggleMatrixEffect(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-wrap">
+          <span>الكرات المتحركة</span>
+          <label class="toggle">
+            <input type="checkbox" id="toggleBubbles" onchange="toggleBubblesEffect(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
 
-      <!-- ═ PANEL: download ═ -->
-      <div class="sett-panel" data-sett="download" style="grid-column:1/-1;display:none;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
-      <div class="settings-card">
-        <h3><i class="fas fa-download"></i> أداة التحميل</h3>
-        <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px;">استخدم <code>{url}</code> مكان الرابط. مثال: <code style="font-size:.72rem;word-break:break-all;">https://example.com/download?url={url}</code></p>
-        <div class="form-group"><label><i class="fab fa-youtube" style="color:#f00;"></i> أداة تحميل الفيديوهات</label><input type="url" id="settDownloaderUrlVideo" placeholder="https://example.com/video?url={url}"></div>
-        <input type="hidden" id="settDownloaderUrlPlaylist" value="">
-        <button class="btn btn-primary" style="width:100%;" onclick="saveDownloaderUrls()"><i class="fas fa-save"></i> حفظ</button>
-      </div>
-      </div>
-
-      <!-- ═ PANEL: data ═ -->
-      <div class="sett-panel" data-sett="data" style="grid-column:1/-1;display:none;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+      <!-- Export / Import -->
       <div class="settings-card">
         <h3><i class="fas fa-database"></i> النسخ الاحتياطي</h3>
-        <p style="font-size:.85rem;color:var(--muted);margin-bottom:18px;">صدّر جميع بياناتك كملف JSON يمكن استيراده لاحقاً.</p>
-        <div class="export-box" style="margin-bottom:14px;"><i class="fas fa-file-export" style="font-size:2rem;color:var(--accent);margin-bottom:10px;display:block;"></i><button class="btn btn-primary" onclick="exportData()"><i class="fas fa-download"></i> تصدير البيانات (JSON)</button></div>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:18px;">
+          صدّر جميع بياناتك (تصنيفات، روابط، ملفات سحابية، برامج، ملاحظات) كملف JSON يمكن استيراده لاحقاً.
+        </p>
+        <div class="export-box" style="margin-bottom:14px;">
+          <i class="fas fa-file-export" style="font-size:2rem;color:var(--accent);margin-bottom:10px;display:block;"></i>
+          <button class="btn btn-primary" onclick="exportData()">
+            <i class="fas fa-download"></i> تصدير البيانات (JSON)
+          </button>
+        </div>
         <div class="export-box" id="importDropZone" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleImportDrop(event)">
           <i class="fas fa-file-import" style="font-size:2rem;color:var(--gold);margin-bottom:10px;display:block;"></i>
-          <button class="btn" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> استيراد من JSON</button>
+          <button class="btn" onclick="document.getElementById('importFile').click()">
+            <i class="fas fa-upload"></i> استيراد من JSON
+          </button>
           <p style="font-size:.78rem;color:var(--muted);margin-top:8px;">أو اسحب الملف هنا</p>
           <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
         </div>
       </div>
+
+      <!-- Interface Size (moved here from the floating widget) -->
+      <div class="settings-card">
+        <h3><i class="fas fa-text-height"></i> حجم الواجهة</h3>
+        <div class="form-group">
+          <label>حجم الخط: <span class="range-val" id="lcFontVal">100%</span></label>
+          <div class="lc-inline-row">
+            <button class="lc-btn" onclick="changeFontSize(-1)" title="تصغير الخط">A-</button>
+            <button class="lc-btn" onclick="changeFontSize(1)" title="تكبير الخط">A+</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>عرض المحتوى: <span class="range-val" id="lcLayoutVal">md</span></label>
+          <div class="lc-inline-row">
+            <button class="lc-btn" onclick="changeLayoutScale(-1)" title="تضييق الـ layout">−</button>
+            <button class="lc-btn" onclick="changeLayoutScale(1)" title="توسيع الـ layout">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Download Tools -->
+      <div class="settings-card">
+        <h3><i class="fas fa-download"></i> أداة التحميل</h3>
+        <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px;">
+          أدخل رابط موقع التحميل الذي تستخدمه. استخدم <code>{url}</code> في المكان الذي يجب أن يوضع فيه رابط الفيديو، مثال:<br>
+          <code style="font-size:.72rem;word-break:break-all;">https://example.com/download?url={url}</code>
+        </p>
+        <div class="form-group">
+          <label><i class="fab fa-youtube" style="color:#f00;"></i> أداة تحميل الفيديوهات</label>
+          <input type="url" id="settDownloaderUrlVideo" placeholder="https://example.com/video?url={url}">
+        </div>
+        <input type="hidden" id="settDownloaderUrlPlaylist" value="">
+        <button class="btn btn-primary" style="width:100%;" onclick="saveDownloaderUrls()">
+          <i class="fas fa-save"></i> حفظ رابط أداة التحميل
+        </button>
+      </div>
+
+      <!-- About -->
+      <div class="settings-card">
+        <h3><i class="fas fa-info-circle"></i> حول التطبيق</h3>
+        <div style="text-align:center;padding:10px 0;">
+          <div style="font-size:2.5rem;margin-bottom:10px;">🎓</div>
+          <div style="font-size:1.3rem;font-weight:900;color:var(--accent);">OuterSchool</div>
+          <div style="font-size:.85rem;color:var(--muted);margin-top:4px;">نظام إدارة محتوى تعليمي</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:14px;line-height:1.8;">
+            الإصدار 5.0<br>
+            يعمل بدون إنترنت<br>
+            البيانات محفوظة في متصفحك
+          </div>
+        </div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <button class="btn btn-danger btn-sm" style="width:100%;" onclick="clearAllData()">
+            <i class="fas fa-trash-alt"></i> مسح كل البيانات
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -3292,7 +3213,7 @@ body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-
       <button class="modal-close" style="position:static;" onclick="closeVideoModal()"><i class="fas fa-times"></i></button>
     </div>
     <div class="yt-player-wrap">
-      <iframe id="videoModalFrame" src="" allowfullscreen allow="autoplay; fullscreen; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
+      <iframe id="videoModalFrame" src="" allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe>
     </div>
     <div class="video-modal-foot">
       <button class="btn btn-primary" id="videoModalExternalBtn"><i class="fas fa-external-link-alt"></i> فتح في تاب خارجي</button>
@@ -3321,10 +3242,6 @@ const APP = {
   currentProgTab: 'html',
   currentNtTab: 'notes',
   sidebarOpen: false,
-  // Navigation history
-  _history: [],      // [{view, id}]
-  _historyIdx: -1,   // pointer into _history
-  _navigating: false // flag to prevent push during back/fwd
 };
 
 const DEFAULT_DATA = {
@@ -3488,15 +3405,6 @@ function genId() {
 //  NAVIGATION
 // ══════════════════════════════════════════════
 function navigate(view, id) {
-  // Push into history stack (skip when called from back/forward)
-  if (!APP._navigating) {
-    // Truncate forward stack when navigating normally
-    APP._history = APP._history.slice(0, APP._historyIdx + 1);
-    APP._history.push({ view, id: id || null });
-    APP._historyIdx = APP._history.length - 1;
-  }
-  _syncNavArrows();
-
   // always clean up any in-DOM injected sub-program before leaving/entering a view
   cleanupInjectedProgram();
 
@@ -3541,33 +3449,6 @@ function navigate(view, id) {
 
   closeSidebar();
   window.scrollTo({top:0, behavior:'smooth'});
-}
-
-function _syncNavArrows() {
-  const back = document.getElementById('btnNavBack');
-  const fwd  = document.getElementById('btnNavFwd');
-  if (back) back.disabled = APP._historyIdx <= 0;
-  if (fwd)  fwd.disabled  = APP._historyIdx >= APP._history.length - 1;
-}
-
-function historyBack() {
-  if (APP._historyIdx <= 0) return;
-  APP._historyIdx--;
-  const { view, id } = APP._history[APP._historyIdx];
-  APP._navigating = true;
-  navigate(view, id);
-  APP._navigating = false;
-  _syncNavArrows();
-}
-
-function historyForward() {
-  if (APP._historyIdx >= APP._history.length - 1) return;
-  APP._historyIdx++;
-  const { view, id } = APP._history[APP._historyIdx];
-  APP._navigating = true;
-  navigate(view, id);
-  APP._navigating = false;
-  _syncNavArrows();
 }
 
 // ══════════════════════════════════════════════
@@ -3772,7 +3653,20 @@ function renderHome() {
       <p>ابدأ بإضافة تصنيف جديد</p>
     </div>`;
   } else {
-    catGrid.innerHTML = rootCats.map(cat => renderCatCard(cat)).join('');
+    catGrid.innerHTML = rootCats.map(cat => {
+      const childCount = DB.categories.filter(c => c.parentId === cat.id).length;
+      const linkCount = DB.links.filter(l => l.catId === cat.id).length;
+      const totalCount = childCount + linkCount;
+      const catNeonStyle = cat.neon ? `box-shadow:0 0 16px rgba(${cat.neon.r},${cat.neon.g},${cat.neon.b},0.7),0 0 32px rgba(${cat.neon.r},${cat.neon.g},${cat.neon.b},0.3);border-color:rgba(${cat.neon.r},${cat.neon.g},${cat.neon.b},0.6);` : '';
+      return `<div class="cat-card" style="--card-color:${cat.color || 'var(--accent)'};${catNeonStyle}" onclick="navigate('category','${cat.id}')">
+        <div class="cat-icon" style="background:${cat.color || 'var(--accent)'};">
+          <i class="fas ${cat.icon || 'fa-folder'}"></i>
+        </div>
+        <div class="cat-name">${escHtml(cat.name)}</div>
+        <div class="cat-meta">${totalCount} عنصر</div>
+        ${cat.desc ? `<div class="cat-meta" style="color:var(--muted);font-size:.73rem;">${escHtml(cat.desc)}</div>` : ''}
+      </div>`;
+    }).join('');
   }
 
   renderProgramsGrid(document.getElementById('homeProgramsGrid'), 6);
@@ -3932,7 +3826,16 @@ function renderCategoryView(catId) {
           <button data-mode="list" title="عرض قائمة"><i class="fas fa-list"></i></button>
         </div>
       </div>
-      <div class="cat-grid" id="catSubGridInner">${children.map(child => renderCatCard(child)).join('')}</div>`;
+      <div class="cat-grid" id="catSubGridInner">${children.map(child => {
+        const cl = DB.links.filter(l => l.catId === child.id).length;
+        return `<div class="cat-card" style="--card-color:${child.color||'var(--accent)'};" onclick="navigate('category','${child.id}')">
+          <div class="cat-icon" style="background:${child.color||'var(--accent)'};">
+            <i class="fas ${child.icon||'fa-folder'}"></i>
+          </div>
+          <div class="cat-name">${escHtml(child.name)}</div>
+          <div class="cat-meta">${cl} رابط</div>
+        </div>`;
+      }).join('')}</div>`;
   } else {
     subGrid.innerHTML = '';
   }
@@ -4103,74 +4006,7 @@ function openVideoById(videoId, title) {
   document.getElementById('videoModal').classList.add('show');
 }
 
-function renderCatCard(child) {
-  const cl = DB.links.filter(l => l.catId === child.id).length;
-  const subCount = DB.categories.filter(c => c.parentId === child.id).length;
-  const hasContent = cl > 0 || subCount > 0;
-  return `<div class="cat-card" style="--card-color:${child.color||'var(--accent)'};" onclick="navigate('category','${child.id}')">
-    <div class="cat-icon" style="background:${child.color||'var(--accent)'};">
-      <i class="fas ${child.icon||'fa-folder'}"></i>
-    </div>
-    <div class="cat-name">${escHtml(child.name)}</div>
-    <div class="cat-meta">${cl} رابط${subCount ? ` · ${subCount} فرعي` : ''}</div>
-    ${hasContent ? `<button class="cat-card-dd-btn" onclick="event.stopPropagation();toggleCatDropdown(event,'${child.id}')">
-      <i class="fas fa-chevron-down"></i> عرض سريع
-    </button>
-    <div class="cat-dropdown" id="catdd-${child.id}" onclick="event.stopPropagation()">
-      <div class="cat-dd-head"><i class="fas fa-folder"></i> ${escHtml(child.name)}</div>
-    </div>` : ''}
-  </div>`;
-}
-
-function toggleCatDropdown(e, catId) {
-  // Close all other dropdowns first
-  document.querySelectorAll('.cat-dropdown.open').forEach(d => {
-    if (d.id !== 'catdd-' + catId) d.classList.remove('open');
-  });
-  const dd = document.getElementById('catdd-' + catId);
-  if (!dd) return;
-  const isOpen = dd.classList.contains('open');
-  if (!isOpen) populateCatDropdown(catId, dd);
-  dd.classList.toggle('open');
-}
-
-function populateCatDropdown(catId, dd) {
-  const subCats = DB.categories.filter(c => c.parentId === catId);
-  const links = DB.links.filter(l => l.catId === catId).slice(0, 8);
-  let html = '';
-  subCats.slice(0,5).forEach(sc => {
-    html += `<div class="cat-dd-item" onclick="navigate('category','${sc.id}')">
-      <i class="fas fa-folder" style="color:${sc.color||'var(--accent)'}"></i>
-      <span>${escHtml(sc.name)}</span>
-    </div>`;
-  });
-  links.forEach(lk => {
-    const icon = lk.type === 'youtube' ? 'fab fa-youtube' : lk.type === 'website' ? 'fas fa-globe' : 'fas fa-list';
-    const color = lk.type === 'youtube' ? '#f00' : 'var(--accent)';
-    const action = lk.type === 'youtube'
-      ? `openVideoModal('${lk.id}')`
-      : `openUrl('${encodeURIComponent(lk.url)}')`;
-    html += `<div class="cat-dd-item" onclick="${action}">
-      <i class="${icon}" style="color:${color}"></i>
-      <span>${escHtml(lk.title)}</span>
-    </div>`;
-  });
-  const total = subCats.length + DB.links.filter(l => l.catId === catId).length;
-  if (total > links.length + subCats.slice(0,5).length) {
-    html += `<div class="cat-dd-more" onclick="navigate('category','${catId}')">عرض الكل (${total}) <i class="fas fa-arrow-left"></i></div>`;
-  }
-  if (!html) html = `<div class="cat-dd-item" style="cursor:default;color:var(--muted);">لا يوجد محتوى</div>`;
-  // keep head, replace rest
-  const head = dd.querySelector('.cat-dd-head');
-  dd.innerHTML = '';
-  if (head) dd.appendChild(head);
-  dd.insertAdjacentHTML('beforeend', html);
-}
-
-// Close dropdowns when clicking outside
-document.addEventListener('click', () => {
-  document.querySelectorAll('.cat-dropdown.open').forEach(d => d.classList.remove('open'));
-});
+function buildBreadcrumb(catId) {
   const result = [];
   let current = DB.categories.find(c => c.id === catId);
   while (current) {
@@ -5363,15 +5199,6 @@ const THEMES = [
 ];
 
 const BUILT_IN_FONTS = ['Cairo','Tajawal','IBM Plex Sans Arabic','JetBrains Mono','Inter'];
-
-function switchSettTab(tab, btn) {
-  document.querySelectorAll('.sett-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  document.querySelectorAll('.sett-panel').forEach(p => {
-    const show = p.dataset.sett === tab;
-    p.style.display = show ? 'grid' : 'none';
-  });
-}
 
 function renderSettings() {
   document.getElementById('settDisplayName').value = DB.profile.displayName || '';
