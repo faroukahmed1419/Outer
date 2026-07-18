@@ -2,13 +2,107 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>OuterSchool — مكتبتك التعليمية</title>
 <meta name="theme-color" content="#0D1117">
+<!-- PWA / Homescreen fullscreen -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OuterSchool">
+<link rel="manifest" id="pwaManifest">
+<script>
+// ══════════════════════════════════════════
+//  PWA — Manifest + Service Worker (inline)
+//  Works from a single .html file with no server
+// ══════════════════════════════════════════
+(function() {
+  // ── 1. Inject Web App Manifest as blob ──
+  const manifest = {
+    name: "OuterSchool",
+    short_name: "OuterSchool",
+    description: "مكتبتك التعليمية الشخصية",
+    display: "fullscreen",
+    display_override: ["fullscreen","standalone","minimal-ui","browser"],
+    orientation: "any",
+    background_color: "#0D1117",
+    theme_color: "#0D1117",
+    start_url: ".",
+    scope: ".",
+    lang: "ar",
+    dir: "rtl",
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%230D1117'/%3E%3Crect x='20' y='20' width='472' height='472' rx='68' fill='%233B82F6' opacity='.15'/%3E%3Ctext y='340' x='80' font-size='320' font-family='serif'%3E🎓%3C/text%3E%3C/svg%3E",
+        sizes: "512x512",
+        type: "image/svg+xml",
+        purpose: "any maskable"
+      }
+    ],
+    screenshots: [],
+    categories: ["education","productivity"]
+  };
+  try {
+    const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+    document.getElementById('pwaManifest').href = URL.createObjectURL(blob);
+  } catch(e) {}
+
+  // ── 2. Register Service Worker (inline as blob URL) ──
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+const CACHE = 'outerschool-v7';
+const ASSETS = [self.registration.scope];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+// Network-first for navigation, cache-first for assets
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  // Skip non-GET, chrome-extension, and external API calls
+  if (e.request.method !== 'GET') return;
+  if (url.origin !== self.location.origin) return;
+
+  e.respondWith(
+    fetch(e.request)
+      .then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request).then(r => r || new Response('Offline', {status: 503})))
+  );
+});
+`;
+    try {
+      const swBlob = new Blob([swCode], {type:'application/javascript'});
+      const swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl, {scope: './'})
+        .then(reg => console.log('[SW] registered', reg.scope))
+        .catch(err => console.warn('[SW] failed (blob SW needs HTTPS or localhost):', err));
+    } catch(e) {}
+  }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=JetBrains+Mono:wght@400;700&family=Tajawal:wght@400;700;900&family=IBM+Plex+Sans+Arabic:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/rss-parser@3.13.0/dist/rss-parser.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
@@ -236,24 +330,41 @@ img{max-width:100%;}
   display:flex;align-items:center;gap:8px;
   margin-right:auto;
 }
+/* ── Topbar fullscreen button ── */
+.topbar-fs-btn{
+  background:none;border:1px solid var(--border);
+  color:var(--muted);
+  width:34px;height:34px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;cursor:pointer;
+  transition:border-color var(--transition),color var(--transition),background var(--transition);
+  flex-shrink:0;
+}
+.topbar-fs-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+
+/* ── User chip — refreshed look ── */
 .user-chip{
-  display:flex;align-items:center;gap:8px;
+  display:flex;align-items:center;gap:9px;
   background:var(--surface2);
   border:1px solid var(--border);
   border-radius:40px;
-  padding:5px 12px 5px 8px;
-  font-size:.85rem;font-weight:600;
+  padding:4px 14px 4px 4px;
+  font-size:.85rem;font-weight:700;
   cursor:pointer;
-  transition:border-color var(--transition);
+  transition:border-color var(--transition),box-shadow var(--transition);
   white-space:nowrap;
 }
-.user-chip:hover{border-color:var(--accent);}
+.user-chip:hover{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow);}
 .user-avatar{
-  width:26px;height:26px;border-radius:50%;
+  width:32px;height:32px;border-radius:50%;
   background:linear-gradient(135deg,var(--accent),var(--gold));
   display:flex;align-items:center;justify-content:center;
-  color:#fff;font-size:.7rem;font-weight:700;
+  color:#fff;font-size:.82rem;font-weight:900;
   flex-shrink:0;
+  box-shadow:0 2px 6px rgba(0,0,0,0.35);
+  border:2px solid rgba(255,255,255,0.12);
+  overflow:hidden;
+  background-repeat:no-repeat;background-position:center;background-size:cover;
 }
 
 /* ══════════════════════════════════════════════
@@ -305,7 +416,15 @@ img{max-width:100%;}
 .sb-close:hover{color:var(--danger);}
 
 .sb-body{
-  flex:1;overflow-y:auto;padding:10px 0 20px;
+  flex:1;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:10px 0 20px;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  /* Fix scroll freeze on mobile */
+  touch-action:pan-y;
+  will-change:scroll-position;
 }
 
 .sb-section{margin-bottom:4px;}
@@ -697,6 +816,79 @@ img{max-width:100%;}
   background:#fff;
 }
 .downloader-frame-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+
+/* ══════════════════════════════════════════════
+   FULLSCREEN (native Fullscreen API + CSS fallback
+   for browsers that don't support it, e.g. iPhone Safari)
+══════════════════════════════════════════════ */
+.fake-fullscreen{
+  position:fixed !important;
+  inset:0 !important;
+  top:0 !important;left:0 !important;right:0 !important;bottom:0 !important;
+  width:100vw !important;
+  height:100vh !important;
+  height:100dvh !important;
+  max-width:100vw !important;
+  max-height:100vh !important;
+  max-height:100dvh !important;
+  margin:0 !important;
+  border-radius:0 !important;
+  z-index:9999 !important;
+  border:none !important;
+  overflow:hidden !important;
+  background:var(--bg) !important;
+}
+body.fake-fullscreen-lock{ overflow:hidden; }
+
+/* Program iframe outer in fullscreen */
+#programIframeOuter.fake-fullscreen{
+  align-items:stretch;
+  background:#000 !important;
+  display:flex !important;
+  flex-direction:column !important;
+}
+#programIframeOuter.fake-fullscreen #programFrame{
+  height:100% !important;
+  width:100% !important;
+  border-radius:0 !important;
+  border:none !important;
+}
+
+/* Downloader modal in fullscreen */
+#downloaderModalBox.fake-fullscreen{
+  display:flex !important;
+  flex-direction:column !important;
+}
+#downloaderModalBox.fake-fullscreen .downloader-frame-wrap{
+  flex:1 !important;
+  height:auto !important;
+}
+
+/* When the browser DOES support native Fullscreen API */
+#programIframeOuter:fullscreen,
+#programIframeOuter:-webkit-full-screen{
+  width:100vw;height:100vh;max-width:100vw;max-height:100vh;
+  border-radius:0;background:#000;
+  display:flex;flex-direction:column;
+}
+#programIframeOuter:fullscreen #programFrame,
+#programIframeOuter:-webkit-full-screen #programFrame{
+  height:100%;width:100%;border:none;border-radius:0;
+}
+#downloaderModalBox:fullscreen,
+#downloaderModalBox:-webkit-full-screen{
+  width:100vw;height:100vh;max-width:100vw;max-height:100vh;
+  border-radius:0;background:var(--bg);
+  display:flex;flex-direction:column;
+}
+#downloaderModalBox:fullscreen .downloader-frame-wrap,
+#downloaderModalBox:-webkit-full-screen .downloader-frame-wrap{
+  flex:1;height:auto;
+}
+
+/* Hide topbar/sidebar when in fullscreen (native) */
+:fullscreen ~ .topbar,
+:-webkit-full-screen ~ .topbar{ display:none !important; }
 .downloader-loading{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   gap:8px;background:var(--surface);color:var(--muted);font-size:.9rem;
@@ -718,6 +910,28 @@ img{max-width:100%;}
     max-width:100%;
     border-radius:0;
   }
+
+  /* Perf: backdrop-filter is very expensive on mobile GPUs, especially on
+     fixed/animated elements sitting over a background image. Disable it on
+     phones and fall back to solid/near-solid backgrounds instead. */
+  .topbar{
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    background:var(--surface);
+  }
+  [data-theme="glass"] .sidebar{
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
+  body.ui-blur-on .cat-card,body.ui-blur-on .item-row,body.ui-blur-on .settings-card,
+  body.ui-blur-on .stat-card,body.ui-blur-on .cloud-card,body.ui-blur-on .note-card,
+  body.ui-blur-on .modal,body.ui-blur-on .sidebar,body.ui-blur-on .topbar,
+  body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-widget-card{
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
+  .modal-bg{ backdrop-filter:none; -webkit-backdrop-filter:none; }
+  .overlay{ backdrop-filter:none; -webkit-backdrop-filter:none; }
 }
 
 /* ══════════════════════════════════════════════
@@ -1194,8 +1408,10 @@ img{max-width:100%;}
    background image, google fonts, pdf, workspace
 ══════════════════════════════════════════════ */
 :root{ --ui-blur:0px; }
-.cat-card,.item-row,.settings-card,.stat-card,.cloud-card,.note-card,.modal,
-.sidebar,.topbar,.todo-item,.cat-view-header,.nt-widget-card{
+body.ui-blur-on .cat-card,body.ui-blur-on .item-row,body.ui-blur-on .settings-card,
+body.ui-blur-on .stat-card,body.ui-blur-on .cloud-card,body.ui-blur-on .note-card,
+body.ui-blur-on .modal,body.ui-blur-on .sidebar,body.ui-blur-on .topbar,
+body.ui-blur-on .todo-item,body.ui-blur-on .cat-view-header,body.ui-blur-on .nt-widget-card{
   backdrop-filter:blur(var(--ui-blur,0px));
   -webkit-backdrop-filter:blur(var(--ui-blur,0px));
 }
@@ -1206,6 +1422,8 @@ img{max-width:100%;}
   background-size:cover;background-position:center;background-repeat:no-repeat;
   opacity:0;transition:opacity .4s ease;
   pointer-events:none;
+  transform:translateZ(0);
+  will-change:opacity;
 }
 #appBgImage.active{opacity:1;}
 #appBgOverlay{
@@ -1904,6 +2122,132 @@ img{max-width:100%;}
 .main { contain: layout; }
 .cat-grid, .cloud-grid, .notes-grid { contain: layout; }
 
+/* ══════════════════════════════════════════════
+   PLAYLIST INLINE VIDEO GRID (RSS-based)
+══════════════════════════════════════════════ */
+.playlist-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.playlist-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background var(--transition);
+  border-bottom: 1px solid transparent;
+}
+.playlist-header:hover { background: var(--surface2); }
+.playlist-header.open { border-bottom-color: var(--border); }
+.playlist-toggle {
+  color: var(--muted);
+  font-size: .75rem;
+  transition: transform .25s;
+  flex-shrink: 0;
+  margin-right: auto;
+}
+.playlist-header.open .playlist-toggle { transform: rotate(-90deg); }
+.playlist-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .35s ease;
+}
+.playlist-body.open { max-height: 5000px; }
+
+/* RSS video grid inside playlist */
+.playlist-rss-area { padding: 14px; }
+.playlist-rss-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.playlist-rss-error {
+  color: var(--danger);
+  text-align: center;
+  padding: 14px;
+  font-size: .85rem;
+  background: rgba(239,68,68,.08);
+  border-radius: var(--radius-sm);
+}
+.playlist-video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.playlist-video-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .2s, border-color .2s;
+}
+.playlist-video-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+.playlist-video-card img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  display: block;
+}
+.playlist-video-card .pvc-info {
+  padding: 8px 10px;
+}
+.playlist-video-card .pvc-title {
+  font-size: .82rem;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+.playlist-video-card .pvc-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.playlist-video-card .pvc-date {
+  font-size: .72rem;
+  color: var(--muted);
+}
+.playlist-video-card .pvc-dl {
+  background: var(--surface3);
+  border: none;
+  color: var(--text);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: .7rem;
+  cursor: pointer;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.playlist-video-card .pvc-dl:hover { background: var(--accent); color: #fff; }
+
+/* Playlist quick-actions row */
+.playlist-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px 0;
+}
+
+@media (max-width: 600px) {
+  .playlist-video-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
 </style>
 </head>
 <body data-theme="github">
@@ -1934,8 +2278,11 @@ img{max-width:100%;}
     <i class="fas fa-search s-icon"></i>
   </div>
 
-  <!-- Left side: user chip -->
+  <!-- Left side: user chip + fullscreen btn -->
   <div class="topbar-right">
+    <button class="topbar-fs-btn" id="topFsBtn" onclick="toggleAppFullscreen()" title="ملء الشاشة">
+      <i class="fas fa-expand" id="topFsIcon"></i>
+    </button>
     <div class="user-chip" onclick="navigate('settings')">
       <div class="user-avatar" id="topUserAvatar">م</div>
       <span id="topUsername">مستخدم</span>
@@ -1995,9 +2342,10 @@ img{max-width:100%;}
 
     <!-- Programs -->
     <div class="sb-section">
-      <div class="sb-item" id="nav-programs-toggle">
-        <i class="fas fa-cubes"></i> البرامج الفرعية
-        <i class="fas fa-chevron-left sb-arrow"></i>
+      <div class="sb-item" id="nav-programs-toggle" data-navid="nav-programs">
+        <i class="fas fa-cubes"></i>
+        <span style="flex:1;" onclick="event.stopPropagation();navigate('programs');closeSidebar();">البرامج الفرعية</span>
+        <i class="fas fa-chevron-left sb-arrow" style="pointer-events:all;"></i>
       </div>
       <div class="sb-dropdown" id="sbProgramsDrop">
         <div id="sbProgramsMenu"></div>
@@ -2149,6 +2497,7 @@ img{max-width:100%;}
     <div class="cloud-grid" id="programsGrid"></div>
   </div>
 
+  <!-- ── PROGRAMS LIST VIEW (dedicated page) ── -->
   <!-- ── SINGLE PROGRAM RUNNER (sandboxed iframe) ── -->
   <div class="view" id="view-program-run">
     <div class="page-header">
@@ -2178,6 +2527,7 @@ img{max-width:100%;}
             <button class="btn btn-sm btn-primary" onclick="applyCustomIframeSize()">تطبيق</button>
           </div>
         </div>
+        <button class="btn" onclick="toggleFullscreen('programIframeOuter')"><i class="fas fa-expand"></i> ملء الشاشة</button>
         <button class="btn" onclick="openProgramNewTab(APP.currentProgramId)"><i class="fas fa-external-link-alt"></i> فتح في تاب</button>
         <button class="btn" onclick="editProgram(APP.currentProgramId)"><i class="fas fa-edit"></i> تعديل</button>
         <button class="btn" onclick="navigate('programs')"><i class="fas fa-arrow-right"></i> رجوع</button>
@@ -2210,9 +2560,18 @@ img{max-width:100%;}
 
     <!-- Notes panel -->
     <div class="nt-panel active" id="ntPanel-notes">
-      <div class="quick-add-row">
-        <input type="text" id="quickNoteInput" placeholder="اكتب ملاحظة جديدة..." onkeydown="if(event.key==='Enter')addQuickNote()">
+      <div class="quick-add-row" style="flex-wrap:wrap;gap:8px;">
+        <input type="text" id="quickNoteInput" placeholder="اكتب ملاحظة جديدة..." onkeydown="if(event.key==='Enter')addQuickNote()" style="flex:1;min-width:180px;">
+        <label class="btn btn-sm" style="cursor:pointer;gap:6px;" title="إضافة صورة">
+          <i class="fas fa-image"></i>
+          <input type="file" id="quickNoteImg" accept="image/*" style="display:none" onchange="previewNoteImg(this)">
+        </label>
         <button class="btn btn-primary" onclick="addQuickNote()"><i class="fas fa-plus"></i> إضافة</button>
+      </div>
+      <!-- Image preview strip -->
+      <div id="noteImgPreview" style="display:none;margin-top:8px;position:relative;display:inline-block;">
+        <img id="noteImgPreviewImg" src="" style="max-height:80px;border-radius:8px;border:1px solid var(--border);">
+        <button onclick="clearNoteImg()" style="position:absolute;top:-6px;left:-6px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="fas fa-times"></i></button>
       </div>
       <div class="notes-grid" id="notesGrid"></div>
     </div>
@@ -2461,18 +2820,19 @@ img{max-width:100%;}
         </div>
       </div>
 
-      <!-- Download Tool -->
+      <!-- Download Tools -->
       <div class="settings-card">
         <h3><i class="fas fa-download"></i> أداة التحميل</h3>
         <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px;">
-          أدخل رابط موقع التحميل الذي تستخدمه. استخدم <code>{url}</code> في المكان الذي يجب أن يوضع فيه رابط الفيديو/الملف، مثال:<br>
+          أدخل رابط موقع التحميل الذي تستخدمه. استخدم <code>{url}</code> في المكان الذي يجب أن يوضع فيه رابط الفيديو، مثال:<br>
           <code style="font-size:.72rem;word-break:break-all;">https://example.com/download?url={url}</code>
         </p>
         <div class="form-group">
-          <label>رابط موقع التحميل</label>
-          <input type="url" id="settDownloaderUrl" placeholder="https://example.com/download?url={url}">
+          <label><i class="fab fa-youtube" style="color:#f00;"></i> أداة تحميل الفيديوهات</label>
+          <input type="url" id="settDownloaderUrlVideo" placeholder="https://example.com/video?url={url}">
         </div>
-        <button class="btn btn-primary" style="width:100%;" onclick="saveDownloaderUrl()">
+        <input type="hidden" id="settDownloaderUrlPlaylist" value="">
+        <button class="btn btn-primary" style="width:100%;" onclick="saveDownloaderUrls()">
           <i class="fas fa-save"></i> حفظ رابط أداة التحميل
         </button>
       </div>
@@ -2622,15 +2982,31 @@ img{max-width:100%;}
     <div class="type-panel" id="panel-playlist">
       <div class="form-group">
         <label>رابط قائمة التشغيل *</label>
-        <input type="url" id="plUrl" placeholder="https://youtube.com/playlist?list=...">
+        <div style="display:flex;gap:8px;">
+          <input type="url" id="plUrl" placeholder="https://youtube.com/playlist?list=..." style="flex:1;" oninput="plUrlChanged()">
+          <button class="btn btn-primary btn-sm" onclick="fetchPlaylistVideos()" id="plFetchBtn" style="white-space:nowrap;flex-shrink:0;">
+            <i class="fas fa-search"></i> جلب الفيديوهات
+          </button>
+        </div>
       </div>
-      <div class="form-group">
-        <label>اسم القائمة *</label>
-        <input type="text" id="plTitle" placeholder="اسم قائمة التشغيل">
-      </div>
-      <div class="form-group">
-        <label>الوصف</label>
-        <input type="text" id="plDesc" placeholder="وصف القائمة">
+      <div id="plFetchStatus" style="display:none;padding:8px 0;font-size:.85rem;color:var(--muted);"></div>
+      <!-- Preview of fetched videos -->
+      <div id="plPreviewWrap" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+          <span id="plVideoCount" style="font-size:.85rem;font-weight:700;color:var(--accent);"></span>
+          <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;">
+            <input type="checkbox" id="plSelectAll" checked onchange="plToggleAll(this.checked)"> تحديد الكل
+          </label>
+        </div>
+        <div id="plVideoList" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;background:var(--surface2);"></div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>اسم المجموعة / العنوان الرئيسي (اختياري)</label>
+          <input type="text" id="plTitle" placeholder="مثال: دورة Python كاملة">
+        </div>
+        <div class="form-group">
+          <label>ملاحظات تُضاف لكل فيديو (اختياري)</label>
+          <input type="text" id="plDesc" placeholder="مثال: يوتيوب — قناة فلان">
+        </div>
       </div>
     </div>
 
@@ -2797,10 +3173,13 @@ img{max-width:100%;}
 
 <!-- Generic Iframe Viewer Modal (used for the download tool + playlist browsing) -->
 <div class="video-modal-bg" id="downloaderModal">
-  <div class="video-modal downloader-modal">
+  <div class="video-modal downloader-modal" id="downloaderModalBox">
     <div class="video-modal-head">
       <h3><i class="fas fa-arrow-up-right-from-square"></i> <span id="downloaderModalTitle">عرض</span></h3>
-      <button class="modal-close" style="position:static;" onclick="closeDownloaderModal()"><i class="fas fa-times"></i></button>
+      <div style="display:flex;gap:6px;">
+        <button class="modal-close" style="position:static;" onclick="toggleFullscreen('downloaderModalBox')" title="ملء الشاشة"><i class="fas fa-expand"></i></button>
+        <button class="modal-close" style="position:static;" onclick="closeDownloaderModal()"><i class="fas fa-times"></i></button>
+      </div>
     </div>
     <div class="downloader-frame-wrap">
       <iframe id="downloaderFrame" src="" allow="clipboard-write" referrerpolicy="no-referrer"></iframe>
@@ -2889,7 +3268,8 @@ const DEFAULT_DATA = {
     particles: false,
     matrix: false,
     bubbles: false,
-    downloaderUrl: '',
+    downloaderUrlVideo: '',
+    downloaderUrlPlaylist: '',
     fontScale: 100,
     layoutIdx: 3,
     catLayout: 'cards',
@@ -2991,6 +3371,11 @@ async function loadDB() {
     for (const key in fresh.settings) {
       if (!(key in data.settings)) data.settings[key] = fresh.settings[key];
     }
+    // migrate old single downloader URL -> the new "video" downloader slot
+    if (data.settings.downloaderUrl && !data.settings.downloaderUrlVideo) {
+      data.settings.downloaderUrlVideo = data.settings.downloaderUrl;
+    }
+    delete data.settings.downloaderUrl;
     for (const key in fresh.profile) {
       if (!(key in data.profile)) data.profile[key] = fresh.profile[key];
     }
@@ -3043,6 +3428,7 @@ function navigate(view, id) {
     document.getElementById('view-cloud').classList.add('active');
     renderCloud();
   } else if (view === 'programs') {
+    document.getElementById('nav-programs-toggle').classList.add('active');
     document.getElementById('view-programs').classList.add('active');
     renderProgramsView();
   } else if (view === 'program-run') {
@@ -3078,11 +3464,38 @@ function openSidebar() {
   sb.classList.add('sb-animating');
   setTimeout(() => sb.classList.remove('sb-animating'), 400);
   document.getElementById('overlay').classList.add('show');
+  // Fix scroll freeze: allow sb-body to scroll independently
+  const sbBody = sb.querySelector('.sb-body');
+  if (sbBody) {
+    sbBody.addEventListener('touchstart', _sbTouchStart, { passive: true });
+    sbBody.addEventListener('touchmove', _sbTouchMove, { passive: false });
+  }
 }
 function closeSidebar() {
   APP.sidebarOpen = false;
-  document.getElementById('sidebar').classList.remove('open');
+  const sb = document.getElementById('sidebar');
+  sb.classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
+  const sbBody = sb.querySelector('.sb-body');
+  if (sbBody) {
+    sbBody.removeEventListener('touchstart', _sbTouchStart);
+    sbBody.removeEventListener('touchmove', _sbTouchMove);
+  }
+}
+
+let _sbTouchStartY = 0;
+function _sbTouchStart(e) {
+  _sbTouchStartY = e.touches[0].clientY;
+}
+function _sbTouchMove(e) {
+  const el = e.currentTarget;
+  const dy = e.touches[0].clientY - _sbTouchStartY;
+  const atTop = el.scrollTop === 0;
+  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+  // Prevent scroll-chaining to body only when at the edges
+  if ((atTop && dy > 0) || (atBottom && dy < 0)) {
+    e.preventDefault();
+  }
 }
 
 function buildSidebarCats() {
@@ -3295,15 +3708,18 @@ function renderLinkRow(link, showCat = false) {
     action = `onclick="openUrl('${encodeURIComponent(link.url)}')"`;
   }
   const catBadge = showCat && cat ? `<span style="font-size:.72rem;padding:2px 7px;border-radius:8px;background:${cat.color||'var(--accent)'}22;color:${cat.color||'var(--accent)'}">${escHtml(cat.name)}</span>` : '';
+  const isMedia = link.type === 'youtube' || link.type === 'playlist';
+  const dlKind = link.type === 'playlist' ? 'playlist' : 'video';
+  const mediaBtns = isMedia ? `
+      <button class="btn-icon btn btn-sm" onclick="copyLinkText('${encodeURIComponent(link.url)}')" title="نسخ الرابط"><i class="fas fa-copy"></i></button>
+      <button class="btn-icon btn btn-sm" onclick="openDownloader('${encodeURIComponent(link.url)}','${dlKind}')" title="تحميل"><i class="fas fa-download"></i></button>` : '';
   return `<div class="item-row" ${action} style="cursor:pointer;">
     <div class="item-thumb">${thumb}</div>
     <div class="item-info">
       <div class="item-title">${escHtml(link.title)}</div>
       <div class="item-meta">${badge}${catBadge}${link.notes ? `<span>${escHtml(link.notes)}</span>` : ''}</div>
     </div>
-    <div class="item-actions" onclick="event.stopPropagation()">
-      <button class="btn-icon btn btn-sm" onclick="copyLinkText('${encodeURIComponent(link.url)}')" title="نسخ الرابط"><i class="fas fa-copy"></i></button>
-      <button class="btn-icon btn btn-sm" onclick="openDownloader('${encodeURIComponent(link.url)}')" title="تحميل"><i class="fas fa-download"></i></button>
+    <div class="item-actions" onclick="event.stopPropagation()">${mediaBtns}
       <button class="btn-icon btn btn-sm" onclick="editLink('${link.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
       <button class="btn-icon btn btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteLink('${link.id}')" title="حذف"><i class="fas fa-trash"></i></button>
     </div>
@@ -3459,40 +3875,135 @@ function renderCategoryView(catId) {
 }
 
 function renderPlaylistRow(link) {
-  return `<div class="playlist-wrap">
-    <div class="playlist-header" onclick="togglePlaylistHeader(this)">
-      <div style="font-size:1.5rem;">📋</div>
+  const safeId = CSS.escape ? CSS.escape(link.id) : link.id;
+  return `<div class="playlist-wrap" id="pw-${link.id}">
+    <div class="playlist-header" onclick="togglePlaylistHeader(this,'${link.id}')">
+      <div style="font-size:1.4rem;flex-shrink:0;">📋</div>
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:.93rem;">${escHtml(link.title)}</div>
         ${link.desc ? `<div style="font-size:.8rem;color:var(--muted);">${escHtml(link.desc)}</div>` : ''}
       </div>
-      <div class="item-actions" onclick="event.stopPropagation()">
+      <div class="item-actions" onclick="event.stopPropagation()" style="flex-shrink:0;">
         <a href="${escHtml(link.url)}" target="_blank" rel="noopener" class="btn btn-sm" title="فتح في يوتيوب"><i class="fab fa-youtube"></i></a>
         <button class="btn-icon btn btn-sm" onclick="copyLinkText('${encodeURIComponent(link.url)}')" title="نسخ الرابط"><i class="fas fa-copy"></i></button>
-        <button class="btn-icon btn btn-sm" onclick="openDownloader('${encodeURIComponent(link.url)}')" title="تحميل"><i class="fas fa-download"></i></button>
         <button class="btn-icon btn btn-sm" onclick="editLink('${link.id}')"><i class="fas fa-edit"></i></button>
         <button class="btn-icon btn btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteLink('${link.id}')"><i class="fas fa-trash"></i></button>
       </div>
       <i class="fas fa-chevron-left playlist-toggle"></i>
     </div>
-    <div class="playlist-body">
-      <div class="playlist-item" onclick="openPlaylistModal('${link.id}')">
-        <div class="playlist-item-num"><i class="fas fa-play"></i></div>
-        <div>تصفح القائمة واختر فيديو (داخل التطبيق)</div>
-        <i class="fas fa-chevron-left" style="color:var(--muted);margin-right:auto;"></i>
-      </div>
-      <div class="playlist-item" onclick="openUrl('${encodeURIComponent(link.url)}')">
-        <div class="playlist-item-num">▶</div>
-        <div>فتح قائمة التشغيل كاملة في تاب خارجي</div>
-        <i class="fas fa-external-link-alt" style="color:var(--muted);margin-right:auto;"></i>
+    <div class="playlist-body" id="pb-${link.id}">
+      <div class="playlist-rss-area" id="prss-${link.id}">
+        <div class="playlist-rss-loading"><i class="fas fa-spinner fa-spin"></i> جاري تحميل الفيديوهات...</div>
       </div>
     </div>
   </div>`;
 }
 
-function togglePlaylistHeader(el) {
+const _rssCache = {};
+
+function togglePlaylistHeader(el, linkId) {
+  const isOpen = el.classList.contains('open');
   el.classList.toggle('open');
-  el.nextElementSibling.classList.toggle('open');
+  const body = document.getElementById('pb-' + linkId);
+  if (body) body.classList.toggle('open');
+  // Load RSS only on first open
+  if (!isOpen) {
+    loadPlaylistRSS(linkId);
+  }
+}
+
+async function loadPlaylistRSS(linkId) {
+  const link = DB.links.find(l => l.id === linkId);
+  if (!link) return;
+  const rssArea = document.getElementById('prss-' + linkId);
+  if (!rssArea) return;
+
+  // Use cache if available
+  if (_rssCache[linkId]) {
+    renderPlaylistVideos(linkId, _rssCache[linkId]);
+    return;
+  }
+
+  // Extract playlist ID
+  const plMatch = link.url.match(/[?&]list=([^&#]+)/);
+  const plId = plMatch ? plMatch[1] : link.url.trim();
+  if (!plId) {
+    rssArea.innerHTML = `<div class="playlist-rss-error">⚠️ تعذر استخراج معرف القائمة</div>`;
+    return;
+  }
+
+  try {
+    const CORS = 'https://api.allorigins.win/raw?url=';
+    const rssUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${plId}`;
+    const res = await fetch(CORS + encodeURIComponent(rssUrl));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const xml = await res.text();
+
+    // Parse using RSSParser if available, else manual
+    let videos = [];
+    if (typeof RSSParser !== 'undefined') {
+      const parser = new RSSParser();
+      const feed = await parser.parseString(xml);
+      videos = (feed.items || []).map(item => {
+        let id = '';
+        if (item.link) { const m = item.link.match(/v=([^&]+)/); if (m) id = m[1]; }
+        return { id, title: item.title || 'بدون عنوان', pubDate: item.pubDate || '', link: item.link || '' };
+      });
+    } else {
+      // Fallback: simple regex parse
+      const entries = xml.match(/<entry>([\s\S]*?)<\/entry>/g) || [];
+      videos = entries.map(e => {
+        const idM = e.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+        const titleM = e.match(/<title>([^<]+)<\/title>/);
+        const dateM = e.match(/<published>([^<]+)<\/published>/);
+        const id = idM ? idM[1] : '';
+        return { id, title: titleM ? titleM[1] : 'بدون عنوان', pubDate: dateM ? dateM[1] : '', link: id ? `https://www.youtube.com/watch?v=${id}` : '' };
+      });
+    }
+
+    if (!videos.length) throw new Error('لا توجد فيديوهات');
+    _rssCache[linkId] = videos;
+    renderPlaylistVideos(linkId, videos);
+  } catch (err) {
+    if (rssArea) rssArea.innerHTML = `<div class="playlist-rss-error">❌ فشل التحميل: ${escHtml(err.message || 'خطأ')}<br><small>تأكد أن القائمة عامة (غير خاصة)</small><br><br><a href="${escHtml(link.url)}" target="_blank" rel="noopener" class="btn btn-sm btn-primary"><i class="fab fa-youtube"></i> فتح في يوتيوب</a></div>`;
+  }
+}
+
+function renderPlaylistVideos(linkId, videos) {
+  const rssArea = document.getElementById('prss-' + linkId);
+  if (!rssArea) return;
+  const link = DB.links.find(l => l.id === linkId);
+  const cardsHtml = videos.map(v => {
+    const thumb = `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`;
+    const date = v.pubDate ? new Date(v.pubDate).toLocaleDateString('ar-EG') : '';
+    const encodedUrl = encodeURIComponent(v.link);
+    return `<div class="playlist-video-card" onclick="openVideoById('${v.id}','${escHtml(v.title).replace(/'/g,'&#39;')}')">
+      <img src="${thumb}" alt="${escHtml(v.title)}" loading="lazy">
+      <div class="pvc-info">
+        <div class="pvc-title">${escHtml(v.title)}</div>
+        <div class="pvc-meta">
+          <span class="pvc-date">${date}</span>
+          <button class="pvc-dl" onclick="event.stopPropagation();openDownloader('${encodedUrl}','video')" title="تحميل"><i class="fas fa-download"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  rssArea.innerHTML = `
+    <div class="playlist-actions-row">
+      <span style="font-size:.8rem;color:var(--muted);margin-left:auto;">${videos.length} فيديو</span>
+      <a href="${link ? escHtml(link.url) : '#'}" target="_blank" rel="noopener" class="btn btn-sm"><i class="fab fa-youtube"></i> فتح في يوتيوب</a>
+    </div>
+    <div class="playlist-rss-area">
+      <div class="playlist-video-grid">${cardsHtml}</div>
+    </div>`;
+}
+
+function openVideoById(videoId, title) {
+  document.getElementById('videoModalTitle').textContent = title || 'فيديو';
+  document.getElementById('videoModalFrame').src = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
+  document.getElementById('videoModalExternalBtn').onclick = () => window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank', 'noopener');
+  document.getElementById('videoModal').classList.add('show');
 }
 
 function buildBreadcrumb(catId) {
@@ -3581,6 +4092,7 @@ function renderProgramsGrid(container, limit) {
         <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center;" onclick="navigate('program-run','${p.id}')">
           <i class="fas fa-play"></i> تشغيل
         </button>
+        <button class="btn btn-sm" onclick="downloadProgramFiles('${p.id}')" title="تحميل الملفات (HTML/CSS/JS)"><i class="fas fa-file-zipper"></i></button>
         <button class="btn btn-sm" onclick="editProgram('${p.id}')"><i class="fas fa-edit"></i></button>
         <button class="btn btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteProgram('${p.id}')"><i class="fas fa-trash"></i></button>
       </div>
@@ -3607,6 +4119,51 @@ function runProgram(id) {
   const sel = document.getElementById('iframeSizeSelect');
   sel.value = DB.settings.lastIframeSize || 'full';
   applyIframeSize(sel.value);
+}
+
+// Exports the program as 3 separate real files (index.html, style.css, script.js)
+// inside a .zip — a proper split project instead of one merged document.
+async function downloadProgramFiles(id) {
+  const p = DB.programs.find(x => x.id === id);
+  if (!p) return;
+  if (typeof JSZip === 'undefined') {
+    showToast('تعذر تحميل أداة الضغط (JSZip) — تأكد من الاتصال بالإنترنت', 'error');
+    return;
+  }
+  const indexHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escHtml(p.name)}</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+${p.files.html || ''}
+<script src="script.js"><\/script>
+</body>
+</html>`;
+
+  const zip = new JSZip();
+  zip.file('index.html', indexHtml);
+  zip.file('style.css', p.files.css || '');
+  zip.file('script.js', p.files.js || '');
+
+  try {
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    const objUrl = URL.createObjectURL(blob);
+    a.href = objUrl;
+    a.download = `${(p.name || 'program').replace(/[^\w\-أ-ي ]/g, '_')}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+    showToast('تم تحميل الملفات (html / css / js) ✓', 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('حدث خطأ أثناء إنشاء الملف المضغوط', 'error');
+  }
 }
 
 function buildProgramHtml(p) {
@@ -3898,6 +4455,84 @@ function cleanupInjectedProgram() {
   const frame = document.getElementById('programFrame');
   if (frame) frame.srcdoc = '';
 }
+
+// ══════════════════════════════════════════════
+//  FULLSCREEN (works for both the program preview and the
+//  external-sites/iframe viewer modal — desktop AND phone)
+// ══════════════════════════════════════════════
+function toggleAppFullscreen() {
+  const icon = document.getElementById('topFsIcon');
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    // Enter fullscreen
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (req) {
+      req.call(el).then(() => {
+        if (icon) { icon.className = 'fas fa-compress'; }
+      }).catch(() => {});
+    }
+  } else {
+    // Exit fullscreen
+    const ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
+    if (ex) ex.call(document);
+  }
+}
+
+// Sync icon on external fullscreen change (e.g. Esc key)
+document.addEventListener('fullscreenchange', _syncFsIcon);
+document.addEventListener('webkitfullscreenchange', _syncFsIcon);
+function _syncFsIcon() {
+  const icon = document.getElementById('topFsIcon');
+  if (!icon) return;
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    icon.className = 'fas fa-compress';
+  } else {
+    icon.className = 'fas fa-expand';
+  }
+}
+function nativeFsElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+function toggleFullscreen(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+
+  // Already in native fullscreen on this element → exit
+  if (nativeFsElement() === el) {
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    return;
+  }
+  // Already in CSS-fallback fullscreen → exit
+  if (el.classList.contains('fake-fullscreen')) {
+    el.classList.remove('fake-fullscreen');
+    document.body.classList.remove('fake-fullscreen-lock');
+    return;
+  }
+
+  // Try the real Fullscreen API first (works on desktop, Android, iPad)
+  if (fsSupported()) {
+    const req = el.requestFullscreen ? el.requestFullscreen() : el.webkitRequestFullscreen();
+    if (req && req.catch) req.catch(() => activateFakeFullscreen(el));
+  } else {
+    // iPhone Safari (and any other browser without element-level Fullscreen
+    // API support) → fall back to a CSS overlay that fills the screen
+    activateFakeFullscreen(el);
+  }
+}
+function activateFakeFullscreen(el) {
+  el.classList.add('fake-fullscreen');
+  document.body.classList.add('fake-fullscreen-lock');
+}
+// Keep the CSS fallback class in sync if the user exits native fullscreen
+// via Esc / back-gesture / browser UI
+function _onFsChange() {
+  if (!nativeFsElement()) {
+    document.body.classList.remove('fake-fullscreen-lock');
+  }
+}
+document.addEventListener('fullscreenchange', _onFsChange);
+document.addEventListener('webkitfullscreenchange', _onFsChange);
 
 // ── iframe layout size controls ──
 const IFRAME_SIZES = {
@@ -4380,6 +5015,29 @@ function renderNotesView() {
   renderTodoList();
 }
 
+let _noteImgData = null;
+
+function previewNoteImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    _noteImgData = e.target.result;
+    const preview = document.getElementById('noteImgPreview');
+    const img = document.getElementById('noteImgPreviewImg');
+    img.src = _noteImgData;
+    preview.style.display = 'inline-block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearNoteImg() {
+  _noteImgData = null;
+  document.getElementById('noteImgPreview').style.display = 'none';
+  document.getElementById('noteImgPreviewImg').src = '';
+  document.getElementById('quickNoteImg').value = '';
+}
+
 function renderNotesGrid() {
   const grid = document.getElementById('notesGrid');
   if (!grid) return;
@@ -4394,12 +5052,15 @@ function renderNotesGrid() {
   const sorted = [...DB.notes].sort((a,b) => (b.createdAt||0)-(a.createdAt||0));
   grid.innerHTML = sorted.map(n => {
     const idx = n.colorIdx || 0;
+    const imgHtml = n.image ? `<img src="${n.image}" style="width:100%;border-radius:6px;margin-bottom:6px;max-height:160px;object-fit:cover;" loading="lazy">` : '';
+    const textHtml = n.text ? `<p>${escHtml(n.text)}</p>` : '';
     return `<div class="note-card" style="background:${NOTE_COLORS[idx % NOTE_COLORS.length]};border-color:${NOTE_BORDERS[idx % NOTE_BORDERS.length]}55;">
       <div class="note-actions">
         <button onclick="editNote('${n.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
         <button onclick="deleteNote('${n.id}')" title="حذف"><i class="fas fa-trash"></i></button>
       </div>
-      <p>${escHtml(n.text)}</p>
+      ${imgHtml}
+      ${textHtml}
       <div class="note-date">${new Date(n.createdAt).toLocaleDateString('ar-EG')}</div>
     </div>`;
   }).join('');
@@ -4408,10 +5069,11 @@ function renderNotesGrid() {
 function addQuickNote() {
   const input = document.getElementById('quickNoteInput');
   const text = input.value.trim();
-  if (!text) return;
-  DB.notes.push({ id: genId(), text, colorIdx: DB.notes.length % NOTE_COLORS.length, createdAt: Date.now() });
+  if (!text && !_noteImgData) return;
+  DB.notes.push({ id: genId(), text: text || '', image: _noteImgData || null, colorIdx: DB.notes.length % NOTE_COLORS.length, createdAt: Date.now() });
   saveDB();
   input.value = '';
+  clearNoteImg();
   renderNotesGrid();
   if (APP.currentView === 'home') renderHomeNtWidget();
   showToast('تمت إضافة الملاحظة ✓', 'success');
@@ -4551,7 +5213,7 @@ function renderSettings() {
   document.getElementById('toggleParticles').checked = DB.settings.particles;
   document.getElementById('toggleMatrix').checked = DB.settings.matrix;
   document.getElementById('toggleBubbles').checked = DB.settings.bubbles;
-  document.getElementById('settDownloaderUrl').value = DB.settings.downloaderUrl || '';
+  document.getElementById('settDownloaderUrlVideo').value = DB.settings.downloaderUrlVideo || '';
 
   document.getElementById('bgBlurRange').value = DB.profile.bgBlur || 0;
   document.getElementById('bgBlurVal').textContent = (DB.profile.bgBlur || 0) + 'px';
@@ -4653,7 +5315,7 @@ function openIframeViewer(title, url) {
   _iframeViewerTimer = setTimeout(() => {
     loadingEl.classList.add('hide');
     fallbackEl.classList.add('show');
-  }, 6000);
+  }, 3500);
 
   document.getElementById('downloaderExternalBtn').onclick = () => window.open(url, '_blank', 'noopener');
   document.getElementById('downloaderModal').classList.add('show');
@@ -4664,16 +5326,21 @@ function closeDownloaderModal() {
   document.getElementById('downloaderModal').classList.remove('show');
   document.getElementById('downloaderFrame').src = '';
   document.getElementById('downloaderFallback').classList.remove('show');
+  const box = document.getElementById('downloaderModalBox');
+  if (nativeFsElement() === box && document.exitFullscreen) document.exitFullscreen();
+  box.classList.remove('fake-fullscreen');
+  document.body.classList.remove('fake-fullscreen-lock');
 }
 
 // ══════════════════════════════════════════════
-//  DOWNLOAD TOOL (settings-configured website, opened in iframe)
+//  DOWNLOAD TOOLS (settings-configured websites, opened in iframe)
+//  Two separate tools: one for single videos, one for playlists.
 // ══════════════════════════════════════════════
-function saveDownloaderUrl() {
-  const val = document.getElementById('settDownloaderUrl').value.trim();
-  DB.settings.downloaderUrl = val;
+function saveDownloaderUrls() {
+  DB.settings.downloaderUrlVideo = document.getElementById('settDownloaderUrlVideo').value.trim();
+  DB.settings.downloaderUrlPlaylist = document.getElementById('settDownloaderUrlPlaylist').value.trim();
   saveDB();
-  showToast('تم حفظ رابط أداة التحميل ✓', 'success');
+  showToast('تم حفظ روابط أدوات التحميل ✓', 'success');
 }
 
 function copyLinkText(encodedUrl) {
@@ -4682,9 +5349,9 @@ function copyLinkText(encodedUrl) {
   showToast('تم نسخ الرابط ✓', 'success');
 }
 
-function openDownloader(encodedUrl) {
+function openDownloader(encodedUrl, kind = 'video') {
   const link = decodeURIComponent(encodedUrl);
-  const template = (DB.settings.downloaderUrl || '').trim();
+  const template = (DB.settings.downloaderUrlVideo || '').trim();
   if (!template) {
     showToast('أضف رابط أداة التحميل من الإعدادات أولاً', 'error');
     navigate('settings');
@@ -4799,6 +5466,7 @@ function applyCustomTheme(theme) {
   document.body.style.setProperty('--text', theme.text);
   document.body.style.setProperty('--muted', hexToRgba(theme.text, 0.55));
   document.body.style.setProperty('--ui-blur', (theme.blur || 0) + 'px');
+  document.body.classList.toggle('ui-blur-on', (theme.blur || 0) > 0);
 }
 
 function saveCustomTheme() {
@@ -4906,7 +5574,10 @@ function applyBgImage() {
   const overlayEl = document.getElementById('appBgOverlay');
   if (DB.profile.backgroundImage) {
     imgEl.style.backgroundImage = `url(${DB.profile.backgroundImage})`;
-    imgEl.style.filter = `blur(${DB.profile.bgBlur || 0}px)`;
+    const blur = DB.profile.bgBlur || 0;
+    const isMobile = window.innerWidth <= 768;
+    const effectiveBlur = isMobile ? Math.min(blur, 8) : blur;
+    imgEl.style.filter = effectiveBlur > 0 ? `blur(${effectiveBlur}px)` : 'none';
     imgEl.classList.add('active');
     overlayEl.style.setProperty('--bg-overlay-opacity', 1 - (DB.profile.bgOpacity != null ? DB.profile.bgOpacity : 50) / 100);
     overlayEl.classList.add('active');
@@ -5517,31 +6188,155 @@ function saveLink() {
     title = document.getElementById('ytTitle').value.trim();
     notes = document.getElementById('ytNotes').value.trim();
     if (!url || !title) { showToast('الرجاء إدخال الرابط والعنوان', 'error'); return; }
+
+    const editId = document.getElementById('editLinkId').value;
+    if (editId) {
+      const link = DB.links.find(l => l.id === editId);
+      if (link) { link.title=title; link.url=url; link.catId=catId||link.catId; link.notes=notes; link.type='youtube'; }
+      showToast('تم تعديل الرابط ✓', 'success');
+    } else {
+      DB.links.push({ id:genId(), type:'youtube', title, url, catId, notes:notes||'', desc:'', createdAt:Date.now() });
+      showToast('تم إضافة الرابط ✓', 'success');
+    }
+    saveDB();
+    closeModal('modalAddLink');
+    if (APP.currentView === 'home') renderHome();
+    else if (APP.currentView === 'category') renderCategoryView(APP.currentCatId);
+
   } else if (type === 'playlist') {
-    url = document.getElementById('plUrl').value.trim();
-    title = document.getElementById('plTitle').value.trim();
-    desc = document.getElementById('plDesc').value.trim();
-    if (!url || !title) { showToast('الرجاء إدخال الرابط والعنوان', 'error'); return; }
+    // Get selected videos from the fetched list
+    const checkboxes = document.querySelectorAll('#plVideoList .pl-video-chk:checked');
+    if (checkboxes.length === 0) {
+      showToast('لم يتم جلب فيديوهات أو لم تختر أياً منها', 'error');
+      return;
+    }
+    const groupNotes = (document.getElementById('plDesc').value || '').trim();
+    const addedCatId = catId;
+    const now = Date.now();
+    let added = 0;
+    checkboxes.forEach((chk, i) => {
+      const vid = chk.dataset.vid;
+      const vtitle = chk.dataset.title;
+      if (!vid || !vtitle) return;
+      const vUrl = `https://www.youtube.com/watch?v=${vid}`;
+      // Check not duplicate
+      const exists = DB.links.find(l => l.url === vUrl && l.catId === addedCatId);
+      if (!exists) {
+        DB.links.push({ id:genId(), type:'youtube', title:vtitle, url:vUrl, catId:addedCatId, notes:groupNotes, desc:'', createdAt: now + i });
+        added++;
+      }
+    });
+    saveDB();
+    closeModal('modalAddLink');
+    showToast(`تمت إضافة ${added} فيديو للتصنيف ✓`, 'success');
+    if (APP.currentView === 'home') renderHome();
+    else if (APP.currentView === 'category') renderCategoryView(APP.currentCatId);
+
   } else {
     url = document.getElementById('wsUrl').value.trim();
     title = document.getElementById('wsTitle').value.trim();
     desc = document.getElementById('wsDesc').value.trim();
     if (!url || !title) { showToast('الرجاء إدخال الرابط والعنوان', 'error'); return; }
-  }
 
-  const editId = document.getElementById('editLinkId').value;
-  if (editId) {
-    const link = DB.links.find(l => l.id === editId);
-    if (link) { link.title=title; link.url=url; link.catId=catId||link.catId; link.notes=notes; link.desc=desc; link.type=type; }
-    showToast('تم تعديل الرابط ✓', 'success');
-  } else {
-    DB.links.push({ id:genId(), type, title, url, catId, notes:notes||'', desc:desc||'', createdAt:Date.now() });
-    showToast('تم إضافة الرابط ✓', 'success');
+    const editId = document.getElementById('editLinkId').value;
+    if (editId) {
+      const link = DB.links.find(l => l.id === editId);
+      if (link) { link.title=title; link.url=url; link.catId=catId||link.catId; link.desc=desc; link.type='website'; }
+      showToast('تم تعديل الرابط ✓', 'success');
+    } else {
+      DB.links.push({ id:genId(), type:'website', title, url, catId, notes:'', desc:desc||'', createdAt:Date.now() });
+      showToast('تم إضافة الرابط ✓', 'success');
+    }
+    saveDB();
+    closeModal('modalAddLink');
+    if (APP.currentView === 'home') renderHome();
+    else if (APP.currentView === 'category') renderCategoryView(APP.currentCatId);
   }
-  saveDB();
-  closeModal('modalAddLink');
-  if (APP.currentView === 'home') renderHome();
-  else if (APP.currentView === 'category') renderCategoryView(APP.currentCatId);
+}
+
+// ── Playlist fetch helpers ──
+let _plFetchedVideos = [];
+
+function plUrlChanged() {
+  // Reset preview if URL changes
+  document.getElementById('plPreviewWrap').style.display = 'none';
+  document.getElementById('plFetchStatus').style.display = 'none';
+  _plFetchedVideos = [];
+}
+
+async function fetchPlaylistVideos() {
+  const url = document.getElementById('plUrl').value.trim();
+  if (!url) { showToast('أدخل رابط القائمة أولاً', 'error'); return; }
+
+  // Extract playlist ID
+  const plMatch = url.match(/[?&]list=([^&#]+)/);
+  const plId = plMatch ? plMatch[1] : url.replace(/\s/g,'');
+  if (!plId) { showToast('تعذر استخراج معرف القائمة', 'error'); return; }
+
+  const statusEl = document.getElementById('plFetchStatus');
+  const previewWrap = document.getElementById('plPreviewWrap');
+  const fetchBtn = document.getElementById('plFetchBtn');
+
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري جلب فيديوهات القائمة...';
+  previewWrap.style.display = 'none';
+  fetchBtn.disabled = true;
+  _plFetchedVideos = [];
+
+  try {
+    const CORS = 'https://api.allorigins.win/raw?url=';
+    const rssUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${plId}`;
+    const res = await fetch(CORS + encodeURIComponent(rssUrl));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const xml = await res.text();
+
+    // Parse XML (no external lib needed here — simple regex is reliable for YT feed)
+    const entries = xml.match(/<entry>([\s\S]*?)<\/entry>/g) || [];
+    _plFetchedVideos = entries.map(e => {
+      const idM = e.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+      const titleM = e.match(/<title>([^<]+)<\/title>/);
+      const dateM = e.match(/<published>([^<]+)<\/published>/);
+      return {
+        id: idM ? idM[1].trim() : '',
+        title: titleM ? titleM[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').trim() : 'بدون عنوان',
+        date: dateM ? new Date(dateM[1]).toLocaleDateString('ar-EG') : ''
+      };
+    }).filter(v => v.id);
+
+    if (!_plFetchedVideos.length) throw new Error('لم يُعثر على فيديوهات — تأكد أن القائمة عامة');
+
+    // Auto-set playlist title if empty
+    const nameInp = document.getElementById('plTitle');
+    if (!nameInp.value.trim()) {
+      const feedTitle = xml.match(/<title>([^<]+)<\/title>/);
+      if (feedTitle) nameInp.value = feedTitle[1].replace(/&amp;/g,'&').trim();
+    }
+
+    // Render preview list
+    document.getElementById('plVideoCount').textContent = `${_plFetchedVideos.length} فيديو — اختر ما تريد إضافته`;
+    document.getElementById('plVideoList').innerHTML = _plFetchedVideos.map((v,i) => `
+      <label class="pl-video-row" style="display:flex;align-items:center;gap:8px;padding:6px;border-radius:6px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background=''">
+        <input type="checkbox" class="pl-video-chk" data-vid="${v.id}" data-title="${v.title.replace(/"/g,'&quot;')}" checked style="flex-shrink:0;accent-color:var(--accent);width:16px;height:16px;">
+        <img src="https://img.youtube.com/vi/${v.id}/default.jpg" style="width:56px;height:42px;object-fit:cover;border-radius:4px;flex-shrink:0;" loading="lazy">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(v.title)}</div>
+          <div style="font-size:.72rem;color:var(--muted);">${v.date}</div>
+        </div>
+      </label>
+    `).join('');
+
+    previewWrap.style.display = 'block';
+    statusEl.innerHTML = `<span style="color:var(--green);">✅ تم جلب ${_plFetchedVideos.length} فيديو بنجاح</span>`;
+
+  } catch(err) {
+    statusEl.innerHTML = `<span style="color:var(--danger);">❌ ${escHtml(err.message || 'فشل جلب القائمة')}</span>`;
+  } finally {
+    fetchBtn.disabled = false;
+  }
+}
+
+function plToggleAll(checked) {
+  document.querySelectorAll('#plVideoList .pl-video-chk').forEach(c => c.checked = checked);
 }
 
 function editLink(linkId) {
